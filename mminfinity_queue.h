@@ -9,8 +9,7 @@ class MminfQueue {
   const int OUTER_BLOCK_SIZE = 100000;
  public:
   void getDistribution(const double t, const int h, std::vector< double > &pvals, std::vector< double > &kvals);
-  void runQueue(const long int nsteps, const int runID, const int initVal = 1);
-  void genTimeFile(const int interval, const int nintervals);
+  void runQueue(const long int nsteps, std::vector< int > &Yvals, const int initVal = 1);
   int getOuterBlockSize() {
     return OUTER_BLOCK_SIZE;
   }
