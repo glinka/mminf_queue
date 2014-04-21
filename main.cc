@@ -1,3 +1,5 @@
+#include <omp.h>
+#include <ctime>
 #include <cstdlib>
 #include <iostream>
 #include <sstream>
@@ -26,7 +28,7 @@ void genTimeFile(const int interval, const int nintervals) {
 int main(int argc, char **argv) {
   // n = 100
   // mu = 0.5 (for complete graph initialization)
-  // run for t = 10E8 steps -> T = n^2
+   // run for t = 10E8 steps -> T = n^2
   
   // MminfQueue queue(100, 0.5);
   // long int nsteps = 100000000;
@@ -46,28 +48,39 @@ int main(int argc, char **argv) {
   //   saveVector(Yvals, outputFile);
   //   outputFile.close();
   // }
-
-  MminfQueue queue(100, 0.5);
+  
+  int nthreads = atoi(argv[1]);
   long int tfinal = 1000000000;
   int tinterval = 1000000;
   int nintervals = tfinal / tinterval;
   const int h = 1;
-  std::vector< double > kvals;
-  std::vector< double > pvals;
-
   const int ESTIMATED_N_PVALS = 50;
-  kvals.reserve(ESTIMATED_N_PVALS);
-  pvals.reserve(ESTIMATED_N_PVALS);
-  std::ofstream pDataFile("queue_data/pData.csv");
-  std::ofstream kDataFile("queue_data/kData.csv");
-  for(int i = 0; i < nintervals; i++) {
+  // std::vector< double > kvals;
+  // std::vector< double > pvals;
+  // kvals.reserve(ESTIMATED_N_PVALS);
+  // pvals.reserve(ESTIMATED_N_PVALS);
+  const int n = 100;
+  const double param = 0.5;
+  const int nruns = 10;
+  long int nsteps = 100000000;
+  time_t tstart = clock();
+#pragma omp parallel for num_threads(nthreads)
+    for(int i = 0; i < nruns; i++) {
 
-    queue.getDistribution(i*tinterval, h, pvals, kvals);
-    saveVector(pvals, pDataFile);
-    saveVector(kvals, kDataFile);
+      std::vector< int > Yvals;
+      Yvals.reserve(ESTIMATED_N_PVALS);
+      MminfQueue queue(n, param);
+      queue.runQueue(nsteps, Yvals);
 
-  }
-  pDataFile.close();
-  kDataFile.close();
-  
+      std::stringstream ss;
+      ss << "queue_data/yData_" << i << ".csv";
+      std::ofstream kDataFile(ss.str());
+      saveVector(Yvals, kDataFile);
+      kDataFile.close();
+
+    }
+    double telapsed = (clock() - tstart)/((double) CLOCKS_PER_SEC);
+    std::ofstream timingData("queue_data/tData.csv", std::ios::app);
+    timingData << telapsed << "," << nthreads << std::endl;
+    timingData.close();
 }
